@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestion des licences — État des lieux numérique</title>
+<style>
+  body{font-family:-apple-system,Helvetica,Arial,sans-serif;background:#F6F4EE;color:#20262E;padding:20px;max-width:560px;margin:0 auto;}
+  h1{font-size:19px;color:#122E4A;margin-bottom:4px;}
+  h2{font-size:15px;color:#122E4A;margin:0 0 10px;}
+  p{font-size:14px;color:#5c6470;line-height:1.5;}
+  .card{background:#fff;border:1px solid #E1DCCF;border-radius:12px;padding:18px;margin-top:16px;}
+  label{display:block;font-size:12.5px;font-weight:700;color:#122E4A;margin-bottom:6px;}
+  input,textarea{width:100%;padding:10px;border:1.5px solid #E1DCCF;border-radius:9px;font-size:15px;box-sizing:border-box;font-family:inherit;}
+  textarea{font-family:'Courier New',monospace;font-size:12.5px;min-height:100px;resize:vertical;}
+  input.code{text-transform:uppercase;letter-spacing:1px;}
+  button{width:100%;padding:11px;border-radius:9px;border:none;background:#1F4E79;color:#fff;font-weight:700;font-size:14.5px;margin-top:8px;cursor:pointer;}
+  button.secondary{background:#fff;border:1.5px solid #1F4E79;color:#1F4E79;}
+  button.danger{background:#fff;border:1.5px solid #C0392B;color:#C0392B;width:auto;padding:7px 12px;margin:0;font-size:13px;}
+  button.small{width:auto;padding:8px 14px;margin:0;font-size:13px;}
+  .row{display:flex;gap:8px;}
+  .row > *{margin-top:0;}
+  .entry{display:flex;justify-content:space-between;align-items:center;border:1px solid #E1DCCF;border-radius:9px;padding:10px 12px;margin-top:8px;background:#F6F4EE;}
+  .entry .meta{min-width:0;}
+  .entry .commune{font-weight:700;font-size:14px;}
+  .entry .hash{font-family:'Courier New',monospace;font-size:11px;color:#9aa2ab;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .empty{font-size:13.5px;color:#9aa2ab;font-style:italic;margin-top:8px;}
+  .reveal{background:#FBF1DD;border-radius:10px;padding:14px 16px;margin-top:14px;}
+  .reveal .code-value{font-family:'Courier New',monospace;font-size:17px;font-weight:700;letter-spacing:1px;background:#fff;border:1px solid #E1DCCF;border-radius:8px;padding:10px;margin:8px 0;text-align:center;}
+  .copy-btn{width:auto;padding:0 14px;margin:0;white-space:nowrap;}
+  .copy-btn.done{background:#2E9E5B;}
+  .json-preview{font-family:'Courier New',monospace;font-size:11.5px;background:#F6F4EE;border:1px solid #E1DCCF;border-radius:8px;padding:10px;max-height:160px;overflow:auto;white-space:pre-wrap;word-break:break-all;}
+  .help-toggle{background:none;border:1.5px solid #1F4E79;color:#1F4E79;margin-top:20px;}
+  .help-block{display:none;margin-top:14px;}
+  .help-block.open{display:block;}
+  .help-block .q{background:#fff;border:1px solid #E1DCCF;border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+  .help-block .q h3{margin:0 0 6px;font-size:14px;color:#122E4A;}
+  .help-block .q p{margin:0;font-size:13px;}
+  .help-block .q code{background:#F6F4EE;padding:1px 5px;border-radius:4px;}
+  code{font-size:12.5px;}
+</style>
+</head>
+<body>
+  <h1>Gestion des licences</h1>
+  <p>Ajoute ou révoque des communes, puis republie <code>licences.json</code> à l'endroit où l'application est hébergée. Tout se calcule ici, sur cet appareil — rien n'est envoyé nulle part.</p>
+
+  <div class="card">
+    <h2>1. Charger la liste actuelle</h2>
+    <p style="margin-top:0;">Colle ici le contenu actuel de ton fichier <code>licences.json</code> (laisse vide s'il n'existe pas encore).</p>
+    <textarea id="pasteInput" placeholder='{"licenses":[{"hash":"...","commune":"..."}]}'></textarea>
+    <button type="button" id="loadBtn">Charger cette liste</button>
+  </div>
+
+  <div class="card">
+    <h2>2. Communes actuellement autorisées</h2>
+    <div id="entriesList"><p class="empty">Aucune commune chargée pour l'instant.</p></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Ajouter une commune</h2>
+    <label>Nom de la commune (pour t'y retrouver — n'apparaît pas dans le code)</label>
+    <input type="text" id="communeInput" placeholder="Ex : Beaumont-sur-Loire">
+    <label style="margin-top:12px;">Code d'activation</label>
+    <div class="row">
+      <input type="text" id="codeInput" class="code" placeholder="XXXX-XXXX-XXXX-XXXX">
+      <button type="button" id="randomBtn" class="secondary small" style="flex-shrink:0;">🎲 Aléatoire</button>
+    </div>
+    <button type="button" id="addBtn">Ajouter cette commune</button>
+
+    <div class="reveal" id="reveal" style="display:none;">
+      <p style="margin:0;"><b>Code à donner à cette commune :</b></p>
+      <div class="row">
+        <div class="code-value" id="revealCode" style="flex:1;"></div>
+        <button type="button" class="copy-btn secondary" id="copyCodeBtn">Copier</button>
+      </div>
+      <p style="margin:0;font-size:12.5px;">Note-le précieusement ailleurs (tableur, papier...) — il ne sera plus jamais affiché ici.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4. Publier la liste mise à jour</h2>
+    <p style="margin-top:0;">À enregistrer sous le nom <code>licences.json</code>, à la racine de l'hébergement de l'application (à côté d'<code>index.html</code>).</p>
+    <div class="json-preview" id="jsonPreview">{"licenses":[]}</div>
+    <div class="row" style="margin-top:10px;">
+      <button type="button" id="downloadBtn">Télécharger licences.json</button>
+      <button type="button" id="copyJsonBtn" class="secondary">Copier</button>
+    </div>
+  </div>
+
+  <button type="button" id="helpToggle" class="help-toggle">❓ Questions fréquentes</button>
+  <div class="help-block" id="helpBlock">
+    <div class="q">
+      <h3>Où est-ce que je dépose licences.json ?</h3>
+      <p>Exactement au même endroit qu'<code>index.html</code>, dans le même dossier. L'application le cherche juste à côté d'elle-même (<code>./licences.json</code>) — si tu le mets ailleurs, elle ne le trouvera pas.</p>
+    </div>
+    <div class="q">
+      <h3>Comment ça révoque une commune ?</h3>
+      <p>En retirant son code de la liste (bouton "Révoquer" à côté de son nom) puis en republiant <code>licences.json</code>. Son application le remarque à la prochaine fois qu'elle a du réseau, et se reverrouille — sans toucher aux autres communes.</p>
+    </div>
+    <div class="q">
+      <h3>Et si la commune n'a pas de réseau sur place ?</h3>
+      <p>L'application continue de fonctionner avec le dernier statut connu tant qu'elle n'a pas pu vérifier en ligne. Elle se reverrouillera dès qu'elle aura à nouveau une connexion.</p>
+    </div>
+    <div class="q">
+      <h3>Comment renouveler une commune pour une nouvelle année ?</h3>
+      <p>Rien à faire ici : la commune ressaisit simplement son code existant dans l'application (depuis l'écran de blocage, ou à tout moment dans Configuration). Ça repousse son échéance d'un an, sans toucher à <code>licences.json</code> — tant que son code n'a pas été révoqué, il reste valable pour un renouvellement.</p>
+    </div>
+    <div class="q">
+      <h3>Deux communes peuvent-elles avoir le même code ?</h3>
+      <p>Techniquement oui, mais évite : tu ne pourrais plus révoquer l'une sans révoquer l'autre en même temps, puisque l'application ne vérifie qu'une empreinte, pas l'identité de la commune. Un code par commune, toujours.</p>
+    </div>
+    <div class="q">
+      <h3>Je perds un code généré ici avant de le donner à la commune, grave ?</h3>
+      <p>Pas du tout, tant que tu n'as pas republié le fichier avec son empreinte. Retire l'entrée (Révoquer) et recommence.</p>
+    </div>
+    <div class="q">
+      <h3>J'ai oublié le code que j'ai donné à une commune, comment le retrouver ?</h3>
+      <p>Impossible à partir de l'empreinte (fait exprès, comme un mot de passe). Note toujours le code quelque part de fiable au moment où tu le donnes — un tableur avec commune, date et code suffit. En dernier recours, révoque son entrée et donne-lui un nouveau code : elle ré-active avec, sans perdre ses données.</p>
+    </div>
+    <div class="q">
+      <h3>Je perds mon fichier licences.json, je fais comment ?</h3>
+      <p>Recolle ici la dernière version que tu as pu sauvegarder de ton côté (email envoyé, sauvegarde de fichier...). Si tu n'as vraiment plus aucune copie, il faudra régénérer un nouveau code pour chaque commune et le leur redonner — leurs données sur place ne sont pas affectées, seule la vérification de licence doit être refaite.</p>
+    </div>
+  </div>
+</body>
+
+<script>
+const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+let entries = [];
+
+function normalize(code){ return (code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+async function sha256Hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function randomCode(){
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let raw = '';
+  for(let i=0;i<16;i++) raw += RECOVERY_ALPHABET[bytes[i] % RECOVERY_ALPHABET.length];
+  return raw.match(/.{1,4}/g).join('-');
+}
+
+function renderEntries(){
+  const el = document.getElementById('entriesList');
+  if(!entries.length){
+    el.innerHTML = '<p class="empty">Aucune commune chargée pour l\'instant.</p>';
+  }else{
+    el.innerHTML = entries.map((e,idx)=>`
+      <div class="entry">
+        <div class="meta">
+          <div class="commune">${escapeHtml(e.commune || 'Sans nom')}</div>
+          <div class="hash">${e.hash}</div>
+        </div>
+        <button type="button" class="danger" data-revoke="${idx}">Révoquer</button>
+      </div>`).join('');
+    el.querySelectorAll('[data-revoke]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        entries.splice(Number(btn.dataset.revoke), 1);
+        renderEntries();
+        renderJson();
+      });
+    });
+  }
+  renderJson();
+}
+function renderJson(){
+  const json = JSON.stringify({ licenses: entries.map(e=>({ hash:e.hash, commune:e.commune })) }, null, 2);
+  document.getElementById('jsonPreview').textContent = json;
+}
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('loadBtn').addEventListener('click', ()=>{
+  const raw = document.getElementById('pasteInput').value.trim();
+  if(!raw){ entries = []; renderEntries(); return; }
+  try{
+    const data = JSON.parse(raw);
+    if(!Array.isArray(data.licenses)) throw new Error('format invalide');
+    entries = data.licenses.map(l => ({ hash: l.hash, commune: l.commune || '' })).filter(e => e.hash);
+    renderEntries();
+  }catch(e){
+    alert('Ce texte ne ressemble pas à un fichier licences.json valide.');
+  }
+});
+
+document.getElementById('randomBtn').addEventListener('click', ()=>{
+  document.getElementById('codeInput').value = randomCode();
+});
+
+document.getElementById('addBtn').addEventListener('click', async ()=>{
+  const commune = document.getElementById('communeInput').value.trim();
+  let code = document.getElementById('codeInput').value.trim();
+  if(!commune){ alert('Indique le nom de la commune.'); return; }
+  if(!code){ code = randomCode(); document.getElementById('codeInput').value = code; }
+  const normalized = normalize(code);
+  const formatted = normalized.match(/.{1,4}/g).join('-');
+  const hash = await sha256Hex(normalized);
+  entries.push({ commune, hash });
+  renderEntries();
+
+  document.getElementById('revealCode').textContent = formatted;
+  document.getElementById('reveal').style.display = 'block';
+  document.getElementById('communeInput').value = '';
+  document.getElementById('codeInput').value = '';
+});
+
+document.getElementById('copyCodeBtn').addEventListener('click', async ()=>{
+  await copyText(document.getElementById('revealCode').textContent, document.getElementById('copyCodeBtn'));
+});
+document.getElementById('copyJsonBtn').addEventListener('click', async ()=>{
+  await copyText(document.getElementById('jsonPreview').textContent, document.getElementById('copyJsonBtn'));
+});
+async function copyText(text, btn){
+  try{ await navigator.clipboard.writeText(text); }catch(e){ return; }
+  const original = btn.textContent;
+  btn.textContent = 'Copié ✓';
+  btn.classList.add('done');
+  setTimeout(()=>{ btn.textContent = original; btn.classList.remove('done'); }, 1500);
+}
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const json = document.getElementById('jsonPreview').textContent;
+  const blob = new Blob([json], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'licences.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('helpToggle').addEventListener('click', ()=>{
+  document.getElementById('helpBlock').classList.toggle('open');
+});
+
+renderEntries();
+</script>
+</html>
